@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEGISHEALTH AI — Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">◈</div>
+        <div>
+          <h1>AEGISHEALTH AI</h1>
+          <p>Predictive Public Health Intelligence</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-section="overview">Overview</button>
+        <button class="nav-item" data-section="forecast">Forecast</button>
+        <button class="nav-item" data-section="anomalies">Anomalies</button>
+        <button class="nav-item" data-section="risk">Risk</button>
+        <button class="nav-item" data-section="data">Data</button>
+        <button class="nav-item" data-section="models">Models</button>
+        <button class="nav-item" data-section="system">System</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="badge">BASELINE V1</span>
+        <span class="badge subtle">LOCAL DEMO</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <div class="header-left">
+          <h2>AEGISHEALTH AI</h2>
+          <p class="subtitle">Predictive Public Health Intelligence</p>
+        </div>
+        <div class="header-center">
+          <span class="status-dot"></span>
+          <span id="system-status">LOCAL SYSTEM ONLINE</span>
+        </div>
+        <div class="header-right">
+          <div class="data-mode">
+            <span class="label">DATA</span>
+            <span id="data-mode" class="value">—</span>
+          </div>
+          <div class="last-run">
+            <span class="label">LAST PIPELINE RUN</span>
+            <span id="last-run" class="value">—</span>
+          </div>
+          <button id="refresh-btn" class="refresh-btn">↻ REFRESH ANALYSIS</button>
+        </div>
+      </header>
+
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">◌</div>
+        <h3>NO ANALYSIS AVAILABLE</h3>
+        <p>Run the baseline pipeline to generate results.</p>
+        <code>python pipelines/run_baseline.py</code>
+      </div>
+
+      <div id="dashboard-content">
+        <!-- OVERVIEW -->
+        <section id="section-overview" class="section active">
+          <div class="metrics-row">
+            <div class="metric-card">
+              <span class="metric-label">CURRENT RISK</span>
+              <span id="metric-risk-level" class="metric-value skeleton">—</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">RISK SCORE</span>
+              <span id="metric-risk-score" class="metric-value skeleton">—</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">ANOMALIES</span>
+              <span id="metric-anomalies" class="metric-value skeleton">—</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">DATA QUALITY</span>
+              <span id="metric-quality" class="metric-value skeleton">—</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">BEST MODEL</span>
+              <span id="metric-model" class="metric-value skeleton">—</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">REGIONS</span>
+              <span id="metric-regions" class="metric-value skeleton">—</span>
+            </div>
+          </div>
+
+          <div class="overview-grid">
+            <div class="panel gauge-panel">
+              <h3>Current Risk</h3>
+              <div class="gauge-container">
+                <svg id="risk-gauge" viewBox="0 0 200 120" class="risk-gauge">
+                  <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12"/>
+                  <path id="gauge-fill" class="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12"/>
+                  <text id="gauge-score" x="100" y="85" text-anchor="middle" class="gauge-score">—</text>
+                  <text id="gauge-level" x="100" y="105" text-anchor="middle" class="gauge-level">—</text>
+                </svg>
+              </div>
+            </div>
+
+            <div class="panel network-panel">
+              <h3>Conceptual Risk Network</h3>
+              <p class="panel-subtitle">Interactive 3D visualization — hover nodes for details, click to select region</p>
+              <div id="risk-network" class="risk-network"></div>
+            </div>
+          </div>
+
+          <div class="panel chart-panel">
+            <div class="panel-header">
+              <h3>Disease Activity</h3>
+              <select id="region-filter" class="region-select">
+                <option value="all">All Regions</option>
+              </select>
+            </div>
+            <div id="activity-chart" class="chart"></div>
+          </div>
+        </section>
+
+        <!-- FORECAST -->
+        <section id="section-forecast" class="section">
+          <div class="panel">
+            <h3>Model Performance</h3>
+            <div id="forecast-metrics" class="model-cards"></div>
+          </div>
+          <div class="panel">
+            <h3>14-Day Model Forecast</h3>
+            <p class="panel-subtitle prediction-label">MODEL PREDICTION — not actual cases</p>
+            <div id="forecast-chart" class="chart"></div>
+          </div>
+        </section>
+
+        <!-- ANOMALIES -->
+        <section id="section-anomalies" class="section">
+          <div class="anomaly-summary">
+            <div class="metric-card"><span class="metric-label">TOTAL OBSERVATIONS</span><span id="anom-total" class="metric-value">—</span></div>
+            <div class="metric-card"><span class="metric-label">ANOMALIES DETECTED</span><span id="anom-detected" class="metric-value">—</span></div>
+            <div class="metric-card"><span class="metric-label">LATEST ANOMALY</span><span id="anom-latest" class="metric-value small">—</span></div>
+            <div class="metric-card"><span class="metric-label">HIGHEST SCORE</span><span id="anom-highest" class="metric-value">—</span></div>
+          </div>
+          <div class="panel">
+            <h3>Anomaly Intelligence</h3>
+            <div id="anomaly-chart" class="chart"></div>
+          </div>
+          <div class="panel">
+            <h3>Anomaly Timeline</h3>
+            <div id="anomaly-timeline" class="anomaly-list"></div>
+          </div>
+        </section>
+
+        <!-- RISK -->
+        <section id="section-risk" class="section">
+          <div class="panel">
+            <h3>Risk Intelligence</h3>
+            <p class="panel-subtitle">Decomposition of baseline decision-support score — uncalibrated engineering baseline</p>
+            <div id="risk-decomposition" class="risk-decomposition"></div>
+            <div id="risk-contrib-chart" class="chart"></div>
+          </div>
+        </section>
+
+        <!-- DATA -->
+        <section id="section-data" class="section">
+          <div class="data-grid">
+            <div class="panel quality-panel">
+              <h3>Data Quality</h3>
+              <div class="quality-circle">
+                <svg viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" class="quality-bg"/>
+                  <circle id="quality-ring" cx="60" cy="60" r="50" class="quality-ring"/>
+                  <text id="quality-pct" x="60" y="65" text-anchor="middle">—</text>
+                </svg>
+              </div>
+              <div id="quality-details" class="quality-details"></div>
+            </div>
+            <div class="panel">
+              <h3>Data Status</h3>
+              <div class="data-status-banner">
+                <span id="data-status-label">SYNTHETIC DEMONSTRATION</span>
+                <p>This dataset is currently used to validate the end-to-end engineering pipeline. It is not real-world surveillance data.</p>
+              </div>
+              <div id="data-table" class="data-table"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MODELS -->
+        <section id="section-models" class="section">
+          <div class="panel">
+            <h3>Baseline Model Benchmark</h3>
+            <div id="model-benchmark" class="chart"></div>
+          </div>
+          <div class="panel">
+            <h3>Temporal Validation</h3>
+            <div class="temporal-validation">
+              <div class="temporal-block train">
+                <span>Earlier Data</span>
+                <strong>Training</strong>
+              </div>
+              <div class="temporal-arrow">→</div>
+              <div class="temporal-block test">
+                <span>Later Data</span>
+                <strong>Testing</strong>
+              </div>
+            </div>
+            <p class="panel-subtitle">Time-series split — no random shuffling to prevent data leakage</p>
+            <div id="model-table" class="model-table"></div>
+          </div>
+        </section>
+
+        <!-- SYSTEM -->
+        <section id="section-system" class="section">
+          <div class="panel">
+            <h3>Pipeline Status</h3>
+            <div id="pipeline-diagram" class="pipeline-diagram"></div>
+          </div>
+          <div class="panel limitations">
+            <h3>Scientific Limitations</h3>
+            <ul>
+              <li>This is an engineering baseline — not a production surveillance system.</li>
+              <li>Current dataset is synthetic and labelled accordingly.</li>
+              <li>Risk score is an uncalibrated baseline decision-support score.</li>
+              <li>Future forecasts are model predictions, not guaranteed outcomes.</li>
+              <li>This system does NOT diagnose patients or guarantee outbreaks.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="node-tooltip" class="node-tooltip hidden"></div>
+
+  <script src="/static/js/risk-network.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
