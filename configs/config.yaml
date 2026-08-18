@@ -1,0 +1,18 @@
+project:
+  disease: Dengue
+  data_source: synthetic
+  random_seed: 42
+data:
+  synthetic_days: 730
+  regions: [North, Central, South]
+forecasting:
+  test_fraction: 0.2
+  moving_average_window: 7
+  future_horizon_days: 14
+risk:
+  weights:
+    forecast: 0.35
+    anomaly: 0.30
+    environment: 0.20
+    seasonal: 0.15
+  thresholds: {low: 25, moderate: 50, high: 75}
