@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Sphere, Line, Html } from "@react-three/drei";
-import { useRef, useState } from "react";
+import { OrbitControls, Sphere, Line, Html, useTexture } from "@react-three/drei";
+import { Suspense, useRef, useState } from "react";
 import * as THREE from "three";
 import type { RegionInfo } from "@/types/dashboard";
 import { riskColor } from "@/lib/utils";
@@ -11,17 +11,99 @@ const POSITIONS: Record<string, [number, number, number]> = {
   South: [1.0, -0.9, 0.2],
 };
 
-function GlobeWireframe() {
+// Public NASA-derived Earth texture set shipped with three-globe.
+// Swap these for locally hosted assets if you want to avoid the unpkg CDN dependency.
+const EARTH_MAP = "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
+const EARTH_BUMP = "https://unpkg.com/three-globe/example/img/earth-topology.png";
+const EARTH_SPEC = "https://unpkg.com/three-globe/example/img/earth-water.png";
+const EARTH_CLOUDS = "https://unpkg.com/three-globe/example/img/earth-clouds.png";
+
+const GLOBE_RADIUS = 1.6;
+
+function EarthSurface() {
   const ref = useRef<THREE.Mesh>(null);
+  const [colorMap, bumpMap, specularMap] = useTexture([EARTH_MAP, EARTH_BUMP, EARTH_SPEC]);
+
   useFrame(({ clock }) => {
     if (ref.current) {
-      ref.current.rotation.y = clock.getElapsedTime() * 0.12;
-      ref.current.rotation.x = Math.sin(clock.getElapsedTime() * 0.08) * 0.08;
+      ref.current.rotation.y = clock.getElapsedTime() * 0.06;
     }
   });
+
   return (
     <mesh ref={ref}>
-      <icosahedronGeometry args={[1.6, 2]} />
+      <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+      <meshPhongMaterial
+        map={colorMap}
+        bumpMap={bumpMap}
+        bumpScale={0.04}
+        specularMap={specularMap}
+        specular="#223344"
+        shininess={6}
+      />
+    </mesh>
+  );
+}
+
+function CloudLayer() {
+  const ref = useRef<THREE.Mesh>(null);
+  const cloudsMap = useTexture(EARTH_CLOUDS);
+
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      // drifts slightly faster than the land/water surface for a parallax effect
+      ref.current.rotation.y = clock.getElapsedTime() * 0.078;
+    }
+  });
+
+  return (
+    <mesh ref={ref} scale={1.012}>
+      <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+      <meshStandardMaterial
+        map={cloudsMap}
+        transparent
+        opacity={0.45}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+function Atmosphere() {
+  return (
+    <mesh scale={1.18}>
+      <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+      <shaderMaterial
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        side={THREE.BackSide}
+        uniforms={{ glowColor: { value: new THREE.Color("#00d4ff") } }}
+        vertexShader={`
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `}
+        fragmentShader={`
+          uniform vec3 glowColor;
+          varying vec3 vNormal;
+          void main() {
+            float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.5);
+            gl_FragColor = vec4(glowColor, clamp(intensity, 0.0, 1.0));
+          }
+        `}
+      />
+    </mesh>
+  );
+}
+
+function GlobeFallback() {
+  // lightweight wireframe placeholder shown while the earth/cloud textures stream in
+  return (
+    <mesh>
+      <icosahedronGeometry args={[GLOBE_RADIUS, 2]} />
       <meshBasicMaterial color="#00d4ff" wireframe transparent opacity={0.12} />
     </mesh>
   );
@@ -37,18 +119,26 @@ function RegionNode({
   const pos = POSITIONS[region.region] ?? [0, 0, 0];
   const color = riskColor(region.risk_level);
   const meshRef = useRef<THREE.Mesh>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const scale = 0.1 + (region.risk_score / 100) * 0.06;
 
   useFrame(({ clock }) => {
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 2.5 + region.risk_score * 0.05) * 0.1;
     if (meshRef.current) {
-      const pulse = 1 + Math.sin(clock.getElapsedTime() * 2.5 + region.risk_score * 0.05) * 0.1;
       meshRef.current.scale.setScalar(scale * pulse * (hovered ? 1.3 : 1));
+    }
+    if (haloRef.current) {
+      const haloPulse = 1 + Math.sin(clock.getElapsedTime() * 1.6 + region.risk_score * 0.05) * 0.25;
+      haloRef.current.scale.setScalar(scale * 2.6 * haloPulse * (hovered ? 1.4 : 1));
     }
   });
 
   return (
     <group position={pos}>
+      {/* real light source, so the risk color actually washes across the textured
+          surface beneath it instead of just sitting on top as a flat marker */}
+      <pointLight color={color} intensity={hovered ? 3.2 : 1.5} distance={1.6} decay={2} />
       <Sphere
         ref={meshRef}
         args={[scale, 24, 24]}
@@ -59,13 +149,19 @@ function RegionNode({
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 1.2 : 0.6}
+          emissiveIntensity={hovered ? 1.6 : 0.9}
           transparent
           opacity={0.95}
         />
       </Sphere>
-      <Sphere args={[scale * 2, 16, 16]}>
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.2 : 0.08} />
+      <Sphere ref={haloRef} args={[scale, 16, 16]}>
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={hovered ? 0.3 : 0.15}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
       </Sphere>
       {hovered && (
         <Html distanceFactor={8} position={[0, scale + 0.3, 0]}>
@@ -133,10 +229,16 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
         Conceptual Risk Network
       </div>
       <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }} gl={{ antialias: true, alpha: true }}>
-        <ambientLight intensity={0.4} />
-        <pointLight position={[5, 5, 5]} intensity={1.2} color="#00d4ff" />
-        <pointLight position={[-3, -2, 2]} intensity={0.6} color="#00e5c0" />
-        <GlobeWireframe />
+        <ambientLight intensity={0.25} />
+        {/* warm "sun" key light so the realistic texture reads naturally instead of being tinted cyan */}
+        <pointLight position={[5, 3, 5]} intensity={1.6} color="#fff2e0" />
+        {/* cool fill light from the dark side, kept subtle so it acts as a rim accent, not a full tint */}
+        <pointLight position={[-4, -2, -3]} intensity={0.35} color="#00d4ff" />
+        <Suspense fallback={<GlobeFallback />}>
+          <EarthSurface />
+          <CloudLayer />
+          <Atmosphere />
+        </Suspense>
         <ParticleField />
         <ConnectionLines regions={regions} />
         {regions.map((r) => (
