@@ -6,7 +6,7 @@ def run_forecasts(features: pd.DataFrame, test_fraction: float, window: int):
     from sklearn.ensemble import HistGradientBoostingRegressor
     feature_cols = ["lag_1","lag_7","lag_14","rolling_mean_7","rolling_mean_14","growth_rate","case_acceleration","week_of_year","month","temperature","rainfall","humidity","rainfall_lag","temperature_lag","humidity_lag","cumulative_rainfall"]
     usable = features.dropna(subset=feature_cols).copy()
-    split = int(len(usable)*(1-test_fraction)); train, test = usable.iloc[:split], usable.iloc[split:]
+    split = int(len(usable)*(1-test_fraction)); train, test = usable.iloc[:split].copy(), usable.iloc[split:].copy()
     test["naive"] = test["lag_1"]
     test["moving_average"] = test["rolling_mean_7"]
     model = HistGradientBoostingRegressor(max_iter=150, learning_rate=.06, max_leaf_nodes=12, random_state=42)

@@ -141,7 +141,7 @@ def print_summary(
         print(f"{label}:")
         print(f"  MAE  {m['mae']}")
         print(f"  RMSE {m['rmse']}")
-        print(f"  R²   {m['r2']}")
+        print(f"  R2   {m['r2']}")
     print()
     print(f"BEST MODEL: {best_model.replace('_', ' ').title()}")
     print()
@@ -253,7 +253,9 @@ def run_pipeline() -> dict:
             "regions": region_risks,
         }
 
-        OUTPUTS.mkdir(parents=True, exist_ok=True)
+        for sub in ("data_quality", "forecasting", "anomaly", "risk", "pipeline"):
+            (OUTPUTS / sub).mkdir(parents=True, exist_ok=True)
+
         write_json(OUTPUTS / "summary.json", summary)
         write_json(OUTPUTS / "data_quality" / "report.json", quality)
         write_json(OUTPUTS / "forecasting" / "metrics.json", {

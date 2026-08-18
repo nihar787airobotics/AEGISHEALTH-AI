@@ -736,6 +736,8 @@ body::after {
 
 .empty-state.hidden { display: none; }
 
+#dashboard-content.hidden { display: none; }
+
 .empty-icon {
   font-size: 64px;
   color: var(--text-muted);

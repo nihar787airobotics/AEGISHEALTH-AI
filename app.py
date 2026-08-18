@@ -27,12 +27,25 @@ def read_json(path: Path) -> dict | None:
         return json.load(f)
 
 
+def sanitize_value(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, float) and (pd.isna(value) or value != value):
+        return None
+    if isinstance(value, (pd.Timestamp,)):
+        return str(value)
+    return value
+
+
 def read_csv(path: Path) -> list[dict] | None:
     if not path.exists():
         return None
     df = pd.read_csv(path)
-    df = df.where(pd.notnull(df), None)
-    return df.to_dict(orient="records")
+    records = df.to_dict(orient="records")
+    return [
+        {key: sanitize_value(val) for key, val in row.items()}
+        for row in records
+    ]
 
 
 def outputs_available() -> bool:
