@@ -65,11 +65,6 @@ export function ActivityChart({
         ).map(([date, v]) => ({ date, predicted_cases: v }))
       : predictions.filter((r) => r.region === region);
 
-  const merged = [
-    ...hist.map((h) => ({ ...h, type: "historical" as const })),
-    ...pred.map((p) => ({ date: p.date, predicted_cases: p.predicted_cases, type: "forecast" as const })),
-  ];
-
   const anomalies = hist.filter((r) => r.is_anomaly === true || r.is_anomaly === "True");
 
   return (

@@ -28,7 +28,9 @@ const config: Config = {
         "fade-in": "fadeIn 0.6s ease-out",
         "slide-down": "slideDown 0.3s ease-out",
         float: "float 6s ease-in-out infinite",
-        pulse-glow: "pulseGlow 3s ease-in-out infinite",
+        "pulse-glow": "pulseGlow 3s ease-in-out infinite",
+        "spin-slow": "spin 20s linear infinite",
+        "float-3d": "float3d 8s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -46,6 +48,10 @@ const config: Config = {
         pulseGlow: {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.8" },
+        },
+        float3d: {
+          "0%, 100%": { transform: "translateY(0px) rotateX(0deg)" },
+          "50%": { transform: "translateY(-16px) rotateX(2deg)" },
         },
       },
       backgroundImage: {
