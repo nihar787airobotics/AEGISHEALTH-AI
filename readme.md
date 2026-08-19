@@ -586,57 +586,6 @@ Tests cover the core pipeline components.
 
 ---
 
-# 🎯 What to Show the Mentor
-
-The strongest demonstration is not just the terminal.
-
-### Step 1 — Show Terminal 1
-
-Demonstrate:
-
-```text
-DATA
- ↓
-VALIDATION
- ↓
-FEATURES
- ↓
-FORECASTING
- ↓
-ANOMALIES
- ↓
-RISK FUSION
-```
-
-and the actual model metrics/risk output.
-
-### Step 2 — Open the Dashboard
-
-```text
-http://localhost:5173
-```
-
-Show:
-
-* current risk
-* disease activity
-* forecast
-* anomaly intelligence
-* regional risk
-* model comparison
-* data quality
-* pipeline status
-* 3D risk network
-
-### Step 3 — Explain the Data Honestly
-
-Say:
-
-> **"This first milestone uses synthetic data purely to validate our complete engineering pipeline. Our next milestone is integrating validated real epidemiological and environmental datasets."**
-
-This is an engineering prototype, not yet a production surveillance system.
-
----
 
 # 🔬 Scientific Methodology
 
