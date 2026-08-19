@@ -211,13 +211,16 @@ function RegionNode({
           depthWrite={false}
         />
       </Sphere>
-      {/* always-on label so every region reads clearly without needing a hover */}
+      {/* always-on label so every region reads clearly without needing a hover,
+          now with the risk score right next to the name */}
       <Html distanceFactor={8} position={[0, scale + 0.16, 0]} center zIndexRange={[10, 0]}>
         <div
-          className="pointer-events-none select-none whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm"
+          className="pointer-events-none select-none flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm"
           style={{ color, borderColor: `${color}55`, backgroundColor: "rgba(4,10,18,0.72)" }}
         >
-          {region.region}
+          <span>{region.region}</span>
+          <span className="opacity-60">·</span>
+          <span>{region.risk_score.toFixed(0)}%</span>
         </div>
       </Html>
       {hovered && (
