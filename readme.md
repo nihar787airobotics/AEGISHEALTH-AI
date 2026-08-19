@@ -418,7 +418,10 @@ Open a **third VS Code terminal**.
 Move into the frontend:
 
 ```powershell
-cd frontend
+ C:\AEGISHEALTH AI> cd AEGISHEALTH-AI
+ C:\AEGISHEALTH AI\AEGISHEALTH-AI> cd frontend
+ C:\AEGISHEALTH AI\AEGISHEALTH-AI\frontend> npm install
+ C:\AEGISHEALTH AI\AEGISHEALTH-AI\frontend> npm run dev
 ```
 
 Install JavaScript dependencies once:
