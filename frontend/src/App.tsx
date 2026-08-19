@@ -11,6 +11,7 @@ import {
   ModelBenchmarkChart,
   RiskContribChart,
 } from "@/components/dashboard/Charts";
+import { PipelineArchitecture } from "@/components/dashboard/PipelineArchitecture";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { formatDate, formatModel } from "@/lib/utils";
 import type { RegionInfo, SectionId, ForecastRecord } from "@/types/dashboard";
@@ -232,6 +233,15 @@ export default function App() {
             {activeSection === "models" && (
               <Panel title="Model Benchmark" subtitle={`Best model: ${formatModel(summary?.best_model ?? "—")}`}>
                 <ModelBenchmarkChart metrics={modelMetrics} bestModel={summary?.best_model} />
+              </Panel>
+            )}
+
+            {activeSection === "pipeline" && (
+              <Panel
+                title="Pipeline Architecture"
+                subtitle="OBSERVE → DETECT → PREDICT → LOCALIZE → EXPLAIN → SIMULATE → RECOMMEND"
+              >
+                <PipelineArchitecture />
               </Panel>
             )}
 
