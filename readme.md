@@ -290,6 +290,8 @@ Run this once:
 ```powershell
 pip install -r requirements.txt
 ```
+ C:\AEGISHEALTH AI\AEGISHEALTH-AI> cd pipelines
+ C:\AEGISHEALTH AI\AEGISHEALTH-AI\pipelines> python run_baseline.py
 
 This installs the local Python stack:
 
