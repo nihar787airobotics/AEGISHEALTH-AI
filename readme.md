@@ -289,6 +289,8 @@ Run this once:
 
 ```powershell
 pip install -r requirements.txt
+C:\AEGISHEALTH AI\AEGISHEALTH-AI> cd pipelines
+C:\AEGISHEALTH AI\AEGISHEALTH-AI\pipelines> python run_baseline.py
 ```
  C:\AEGISHEALTH AI\AEGISHEALTH-AI> cd pipelines
  C:\AEGISHEALTH AI\AEGISHEALTH-AI\pipelines> python run_baseline.py
@@ -354,8 +356,8 @@ Open a **second VS Code terminal**.
 
 From the repository root:
 
-```powershell
-uvicorn app:app --reload --port 8000
+```terminal 2
+C:\AEGISHEALTH AI\AEGISHEALTH-AI> uvicorn app:app --reload --port 8001
 ```
 
 The backend will normally run at:
