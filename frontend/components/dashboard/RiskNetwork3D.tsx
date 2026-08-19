@@ -6,7 +6,7 @@ import * as THREE from "three";
 import type { RegionInfo } from "@/types/dashboard";
 import { riskColor } from "@/lib/utils";
 
-const POSITIONS: Record<string, [number, number, number]> = {
+const REGION_DIRECTIONS: Record<string, [number, number, number]> = {
   North: [0, 1.4, 0.4],
   Central: [-1.1, -0.2, 0.7],
   South: [1.0, -0.9, 0.2],
@@ -21,6 +21,20 @@ const EARTH_SPEC = "https://unpkg.com/three-globe/example/img/earth-water.png";
 const EARTH_CLOUDS = "https://unpkg.com/three-globe/example/clouds/clouds.png";
 
 const GLOBE_RADIUS = 1.6;
+// Sit region markers just above the earth + cloud shell (radius ~1.62) so they
+// aren't depth-occluded inside the now-opaque globe — the raw REGION_DIRECTIONS
+// above are just directions; this rescales each to a fixed distance from center.
+const MARKER_RADIUS = GLOBE_RADIUS + 0.12;
+
+function toSurfacePosition([x, y, z]: [number, number, number]): [number, number, number] {
+  const len = Math.hypot(x, y, z) || 1;
+  const scale = MARKER_RADIUS / len;
+  return [x * scale, y * scale, z * scale];
+}
+
+const POSITIONS: Record<string, [number, number, number]> = Object.fromEntries(
+  Object.entries(REGION_DIRECTIONS).map(([key, dir]) => [key, toSurfacePosition(dir)])
+) as Record<string, [number, number, number]>;
 
 function EarthSurface() {
   const ref = useRef<THREE.Mesh>(null);
