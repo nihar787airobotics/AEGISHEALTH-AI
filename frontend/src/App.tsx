@@ -21,16 +21,28 @@ function Panel({
   subtitle,
   children,
   className = "",
+  id,
+  highlighted = false,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   className?: string;
+  id?: string;
+  highlighted?: boolean;
 }) {
   return (
     <motion.div
+      id={id}
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        boxShadow: highlighted
+          ? "0 0 0 1.5px rgba(0,212,255,0.65), 0 0 32px rgba(0,212,255,0.35)"
+          : "0 0 0 0px rgba(0,212,255,0)",
+      }}
+      transition={{ duration: 0.6 }}
       className={`glass-panel p-5 md:p-6 ${className}`}
     >
       <div className="mb-4">
@@ -51,6 +63,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<SectionId>("overview");
   const [showHero, setShowHero] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState("all");
+  const [regionFlash, setRegionFlash] = useState(false);
 
   const { loading, error, health, summary, risk, forecast, anomalies, quality, models, pipeline, refresh } =
     useDashboardData();
@@ -68,6 +81,15 @@ export default function App() {
     setTimeout(() => {
       document.getElementById("command-center")?.scrollIntoView({ behavior: "smooth" });
     }, 50);
+  }, []);
+
+  const handleSelectRegion = useCallback((region: string) => {
+    setSelectedRegion(region);
+    setRegionFlash(true);
+    setTimeout(() => {
+      document.getElementById("disease-activity-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    setTimeout(() => setRegionFlash(false), 1600);
   }, []);
 
   const regions = regionsFromRisk(risk);
@@ -130,10 +152,15 @@ export default function App() {
                     <RiskGauge score={risk?.risk_score ?? 0} level={risk?.risk_level ?? "—"} />
                   </Panel>
                   <Panel title="3D Risk Network" subtitle="Conceptual spatial intelligence" className="xl:col-span-2">
-                    <RiskNetwork3D regions={regions} onSelectRegion={setSelectedRegion} />
+                    <RiskNetwork3D regions={regions} onSelectRegion={handleSelectRegion} />
                   </Panel>
                 </div>
-                <Panel title="Disease Activity" subtitle="Historical case trends">
+                <Panel
+                  id="disease-activity-panel"
+                  title="Disease Activity"
+                  subtitle="Historical case trends"
+                  highlighted={regionFlash}
+                >
                   <div className="mb-3 flex gap-2 flex-wrap">
                     {["all", ...(regionList ?? [])].map((r) => (
                       <button

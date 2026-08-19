@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Sphere, Line, Html, useTexture } from "@react-three/drei";
-import { Component, Suspense, useRef, useState } from "react";
+import { OrbitControls, Sphere, Line, Html, useTexture, Stars } from "@react-three/drei";
+import { Component, Suspense, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import * as THREE from "three";
 import type { RegionInfo } from "@/types/dashboard";
@@ -254,6 +254,93 @@ function ConnectionLines({ regions }: { regions: RegionInfo[] }) {
   return <>{lines}</>;
 }
 
+// --- Decorative mini solar system around the globe (purely aesthetic, no data tie-in) ---
+
+function OrbitRing({ radius }: { radius: number }) {
+  const points = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+    }
+    return pts;
+  }, [radius]);
+  return <Line points={points} color="#ffffff" transparent opacity={0.1} lineWidth={1} />;
+}
+
+function OrbitingPlanet({
+  radius,
+  size,
+  color,
+  speed,
+  ringed = false,
+}: {
+  radius: number;
+  size: number;
+  color: string;
+  speed: number;
+  ringed?: boolean;
+}) {
+  const orbitRef = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (orbitRef.current) {
+      orbitRef.current.rotation.y = clock.getElapsedTime() * speed;
+    }
+  });
+  return (
+    <>
+      <OrbitRing radius={radius} />
+      <group ref={orbitRef}>
+        <group position={[radius, 0, 0]}>
+          <mesh rotation={[0.3, 0, 0]}>
+            <sphereGeometry args={[size, 20, 20]} />
+            <meshStandardMaterial color={color} roughness={0.7} metalness={0.1} />
+          </mesh>
+          {ringed && (
+            <mesh rotation={[1.3, 0.2, 0]}>
+              <ringGeometry args={[size * 1.5, size * 2.2, 48]} />
+              <meshBasicMaterial color={color} transparent opacity={0.35} side={THREE.DoubleSide} />
+            </mesh>
+          )}
+        </group>
+      </group>
+    </>
+  );
+}
+
+function DistantSun() {
+  return (
+    <group position={[-8, 4.5, -9]}>
+      <mesh>
+        <sphereGeometry args={[0.9, 24, 24]} />
+        <meshBasicMaterial color="#ffd28a" />
+      </mesh>
+      <mesh scale={2.4}>
+        <sphereGeometry args={[0.9, 24, 24]} />
+        <meshBasicMaterial
+          color="#ffb454"
+          transparent
+          opacity={0.22}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <pointLight color="#ffdcae" intensity={0.6} distance={40} decay={2} />
+    </group>
+  );
+}
+
+function MiniSolarSystem() {
+  return (
+    <>
+      <DistantSun />
+      <OrbitingPlanet radius={2.7} size={0.09} color="#c96b4a" speed={0.09} />
+      <OrbitingPlanet radius={3.4} size={0.15} color="#d9b26a" speed={0.055} ringed />
+      <OrbitingPlanet radius={4.2} size={0.11} color="#6a9fd9" speed={0.035} />
+    </>
+  );
+}
+
 function ParticleField() {
   const ref = useRef<THREE.Points>(null);
   const count = 150;
@@ -298,6 +385,8 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
             <Atmosphere />
           </Suspense>
         </GlobeErrorBoundary>
+        <Stars radius={70} depth={35} count={2500} factor={2.5} saturation={0} fade speed={0.4} />
+        <MiniSolarSystem />
         <ParticleField />
         <ConnectionLines regions={regions} />
         {regions.map((r) => (
@@ -307,7 +396,7 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
           enableZoom
           enablePan={false}
           minDistance={2.6}
-          maxDistance={9}
+          maxDistance={12}
           autoRotate
           autoRotateSpeed={0.4}
         />
