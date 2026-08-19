@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Line, Html, useTexture } from "@react-three/drei";
-import { Suspense, useRef, useState } from "react";
+import { Component, Suspense, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import * as THREE from "three";
 import type { RegionInfo } from "@/types/dashboard";
 import { riskColor } from "@/lib/utils";
@@ -16,7 +17,8 @@ const POSITIONS: Record<string, [number, number, number]> = {
 const EARTH_MAP = "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
 const EARTH_BUMP = "https://unpkg.com/three-globe/example/img/earth-topology.png";
 const EARTH_SPEC = "https://unpkg.com/three-globe/example/img/earth-water.png";
-const EARTH_CLOUDS = "https://unpkg.com/three-globe/example/img/earth-clouds.png";
+// NOTE: the cloud texture lives in a different folder than the other earth maps
+const EARTH_CLOUDS = "https://unpkg.com/three-globe/example/clouds/clouds.png";
 
 const GLOBE_RADIUS = 1.6;
 
@@ -101,12 +103,30 @@ function Atmosphere() {
 
 function GlobeFallback() {
   // lightweight wireframe placeholder shown while the earth/cloud textures stream in
+  // (and permanently, if a texture ever fails to load — see GlobeErrorBoundary below)
   return (
     <mesh>
       <icosahedronGeometry args={[GLOBE_RADIUS, 2]} />
       <meshBasicMaterial color="#00d4ff" wireframe transparent opacity={0.12} />
     </mesh>
   );
+}
+
+// If a texture 404s or the CDN is unreachable, useTexture's promise rejects and
+// Suspense can't catch that — it would otherwise crash the whole dashboard.
+// This boundary catches it and quietly drops back to the wireframe globe instead.
+class GlobeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("Realistic globe failed to load, falling back to wireframe:", error);
+  }
+  render() {
+    if (this.state.hasError) return <GlobeFallback />;
+    return this.props.children;
+  }
 }
 
 function RegionNode({
@@ -234,11 +254,13 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
         <pointLight position={[5, 3, 5]} intensity={1.6} color="#fff2e0" />
         {/* cool fill light from the dark side, kept subtle so it acts as a rim accent, not a full tint */}
         <pointLight position={[-4, -2, -3]} intensity={0.35} color="#00d4ff" />
-        <Suspense fallback={<GlobeFallback />}>
-          <EarthSurface />
-          <CloudLayer />
-          <Atmosphere />
-        </Suspense>
+        <GlobeErrorBoundary>
+          <Suspense fallback={<GlobeFallback />}>
+            <EarthSurface />
+            <CloudLayer />
+            <Atmosphere />
+          </Suspense>
+        </GlobeErrorBoundary>
         <ParticleField />
         <ConnectionLines regions={regions} />
         {regions.map((r) => (
