@@ -186,7 +186,4 @@ pytest tests/ -v
 - Real-time ingestion
 - Cloud deployment (later phase)
 
-## License
 
-Academic / SIH 2026 project — AegisHealth AI Team
-this is it for the day
