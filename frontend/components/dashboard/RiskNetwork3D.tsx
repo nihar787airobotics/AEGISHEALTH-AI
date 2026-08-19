@@ -52,12 +52,12 @@ function EarthSurface() {
       <meshPhongMaterial
         map={colorMap}
         bumpMap={bumpMap}
-        bumpScale={0.04}
+        bumpScale={0.015}
         specularMap={specularMap}
         specular="#223344"
         shininess={6}
         transparent
-        opacity={0.62}
+        opacity={0.8}
         depthWrite={false}
         side={THREE.DoubleSide}
       />
@@ -110,8 +110,12 @@ function Atmosphere() {
           uniform vec3 glowColor;
           varying vec3 vNormal;
           void main() {
-            float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.5);
-            gl_FragColor = vec4(glowColor, clamp(intensity, 0.0, 1.0));
+            // clamp the base to zero before pow() — a negative base with a
+            // fractional exponent is undefined and was rendering as a solid
+            // fill across the globe instead of a thin rim
+            float facing = max(0.0, 0.55 - dot(vNormal, vec3(0.0, 0.0, 1.0)));
+            float intensity = pow(facing, 3.0);
+            gl_FragColor = vec4(glowColor, clamp(intensity, 0.0, 0.85));
           }
         `}
       />
@@ -282,7 +286,7 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
         Conceptual Risk Network
       </div>
       <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }} gl={{ antialias: true, alpha: true }}>
-        <ambientLight intensity={0.25} />
+        <ambientLight intensity={0.45} />
         {/* warm "sun" key light so the realistic texture reads naturally instead of being tinted cyan */}
         <pointLight position={[5, 3, 5]} intensity={1.6} color="#fff2e0" />
         {/* cool fill light from the dark side, kept subtle so it acts as a rim accent, not a full tint */}
