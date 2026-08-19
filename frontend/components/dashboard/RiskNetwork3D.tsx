@@ -56,6 +56,10 @@ function EarthSurface() {
         specularMap={specularMap}
         specular="#223344"
         shininess={6}
+        transparent
+        opacity={0.62}
+        depthWrite={false}
+        side={THREE.DoubleSide}
       />
     </mesh>
   );
@@ -176,8 +180,14 @@ function RegionNode({
       <Sphere
         ref={meshRef}
         args={[scale, 24, 24]}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
+        onPointerOver={() => {
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = "auto";
+        }}
         onClick={() => onSelect(region.region)}
       >
         <meshStandardMaterial
@@ -197,10 +207,19 @@ function RegionNode({
           depthWrite={false}
         />
       </Sphere>
+      {/* always-on label so every region reads clearly without needing a hover */}
+      <Html distanceFactor={8} position={[0, scale + 0.16, 0]} center zIndexRange={[10, 0]}>
+        <div
+          className="pointer-events-none select-none whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm"
+          style={{ color, borderColor: `${color}55`, backgroundColor: "rgba(4,10,18,0.72)" }}
+        >
+          {region.region}
+        </div>
+      </Html>
       {hovered && (
-        <Html distanceFactor={8} position={[0, scale + 0.3, 0]}>
+        <Html distanceFactor={8} position={[0, scale + 0.42, 0]} center zIndexRange={[20, 0]}>
           <div className="rounded-lg border border-aegis-cyan/30 bg-aegis-bg/95 px-3 py-2 text-xs backdrop-blur-md shadow-xl whitespace-nowrap pointer-events-none">
-            <div className="font-bold text-aegis-cyan">{region.region}</div>
+            <div className="font-bold text-aegis-cyan">{region.region} Region</div>
             <div className="text-white/60">Cases: {region.latest_cases ?? "—"}</div>
             <div className="text-white/60">Forecast: {region.forecast_mean ?? "—"}</div>
             <div style={{ color }}>{region.risk_score} — {region.risk_level}</div>
@@ -280,7 +299,14 @@ export function RiskNetwork3D({ regions, onSelectRegion }: RiskNetwork3DProps) {
         {regions.map((r) => (
           <RegionNode key={r.region} region={r} onSelect={onSelectRegion} />
         ))}
-        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.4} />
+        <OrbitControls
+          enableZoom
+          enablePan={false}
+          minDistance={2.6}
+          maxDistance={9}
+          autoRotate
+          autoRotateSpeed={0.4}
+        />
       </Canvas>
     </div>
   );
